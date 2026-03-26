@@ -28,18 +28,19 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private Role role;
 
-    
+    // =======================================================
     // METODI DI "UserDetails" OBBLIGATORI PER SPRING SECURITY
-    
+    // =======================================================
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+        // Diciamo a Spring Security qual è il ruolo dell'utente (es. "ROLE_CUSTOMER")
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override
     public String getUsername() {
-        return email; 
+        return email; // Usiamo l'email come username per fare il login!
     }
 
     @Override

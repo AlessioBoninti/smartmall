@@ -13,13 +13,13 @@ public class AvailabilityRule {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Ogni rule appartiene a un Negozio
+    // Relazione: Ogni regola appartiene a un Negozio
     @ManyToOne
     @JoinColumn(name = "store_id", nullable = false)
     private Store store;
 
     @Column(nullable = false)
-    private Integer dayOfWeek; // Da 1 (Lunedì) a 7 (Domenica) 
+    private Integer dayOfWeek; // Da 1 (Lunedì) a 7 (Domenica) come da tua relazione
 
     @Column(nullable = false)
     private LocalTime startTime;
