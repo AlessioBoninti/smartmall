@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    //Cattura le nostre eccezioni di Business
+    //Cattura le nostre eccezioni di Business (Overbooking, Store Sospeso, ecc.)
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponseDTO> handleRuntimeException(RuntimeException ex, HttpServletRequest request) {
         ErrorResponseDTO error = new ErrorResponseDTO(
@@ -27,11 +27,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
-    //Cattura gli errori di Validazione 
+    //Cattura gli errori di Validazione (es. @Future, @NotNull)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDTO> handleValidationExceptions(MethodArgumentNotValidException ex, HttpServletRequest request) {
 
-        // Estrapola i messaggi di errore specifici 
+        //Estrapola i messaggi di errore specifici (es. "startDateTime: Non puoi prenotare nel passato")
         String errorMessage = ex.getBindingResult().getFieldErrors().stream()
                 .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
                 .collect(Collectors.joining(", "));

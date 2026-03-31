@@ -30,34 +30,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String jwt;
         final String userEmail;
 
-        
+        // Se non c'tè l'header "Authorization" o non inizia con "Bearer ", ignoriamo e andiamo avanti
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        
+        // Estraiamo il token (togliendo la parola "Bearer ") e l'email
         jwt = authHeader.substring(7);
         userEmail = jwtUtil.extractUsername(jwt);
 
-        
+        // Se l'email c'è e l'utente non è ancora loggato nel contesto di questa richiesta
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            
+            // Peschiamo l'utente dal Database tramite l'email
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
-            
+            // Se il token è valido, diciamo a Spring Security: "Ok, l'utente è ufficialmente loggato!"
             if (jwtUtil.isTokenValid(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities()
                 );
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                
+                // Salviamo l'autenticazione nel SecurityContext
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
 
+        // Passiamo la palla al prossimo filtro o al Controller
         filterChain.doFilter(request, response);
     }
 }

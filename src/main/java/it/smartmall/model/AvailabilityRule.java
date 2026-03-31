@@ -19,7 +19,7 @@ public class AvailabilityRule {
     private Store store;
 
     @Column(nullable = false)
-    private Integer dayOfWeek; // Da 1 (Lunedì) a 7 (Domenica) come da tua relazione
+    private Integer dayOfWeek; // Da 1 (Lunedì) a 7 (Domenica)
 
     @Column(nullable = false)
     private LocalTime startTime;

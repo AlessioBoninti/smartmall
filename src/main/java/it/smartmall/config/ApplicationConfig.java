@@ -19,7 +19,7 @@ public class ApplicationConfig {
 
     private final UserRepository userRepository;
 
-    // Spring ricava gli utenti dal nostro DB
+    // Indichiamo a Spring dove riavare gli utenti dal nostro DB
     @Bean
     public UserDetailsService userDetailsService() {
         return username -> userRepository.findByEmail(username)

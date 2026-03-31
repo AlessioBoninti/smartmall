@@ -16,7 +16,8 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
 
     List<Store> findByMerchantId(Long merchantId);
 
-   
+    // Questa query applica il "FOR UPDATE" al database!
+    // Blocca la riga del negozio finché la transazione non è finita.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM Store s WHERE s.id = :id")
     Optional<Store> findByIdWithLock(@Param("id") Long id);

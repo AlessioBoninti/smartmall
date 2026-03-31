@@ -9,11 +9,11 @@ import java.time.LocalDateTime;
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
-    
+    // Esempio pratico di query sicura per contare i posti occupati
     int countByStoreIdAndStartDateTimeAndStatus(Long storeId, LocalDateTime startDateTime, BookingStatus status);
 
 
-    
+    // Nuovo metodo per l'Anti-Spam (Fair Play)
     boolean existsByCustomerIdAndStoreIdAndStartDateTimeAndStatus(
             Long customerId, Long storeId, LocalDateTime startDateTime, BookingStatus status);
 

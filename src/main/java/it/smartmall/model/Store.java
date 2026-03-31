@@ -19,13 +19,13 @@ public class Store {
     @Column(nullable = false)
     private String name;
 
-    // Relazione: Ogni negozio è gestito da un MERCHANT (che è un User)
+    // Ogni negozio è gestito da un MERCHANT (che è un User)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "merchant_id", nullable = false)
     @JsonIgnore // <-- 2. AGGIUNTO QUESTO: nasconde il merchant dal JSON
     private User merchant;
 
-    // --- Punto 7 della Relazione: Gestione Sospensione ---
+    // Gestione per la Sospensione di un negozio
     private LocalDateTime suspendedFrom;
     private LocalDateTime suspendedTo;
     private String suspendedReason;

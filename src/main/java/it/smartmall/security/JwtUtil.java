@@ -20,23 +20,23 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
-    
+    // Genera la chiave crittografica a partire dalla stringa nel properties
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
-    
+    // Estrae l'email (username) dal token
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    
+    // Estrae una singola informazione dal token
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
-    
+    // Genera un nuovo token per l'utente loggato
     public String generateToken(UserDetails userDetails) {
         return Jwts.builder()
                 .setSubject(userDetails.getUsername())
@@ -46,7 +46,7 @@ public class JwtUtil {
                 .compact();
     }
 
-    
+    // Verifica se il token è valido e appartiene all'utente
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);

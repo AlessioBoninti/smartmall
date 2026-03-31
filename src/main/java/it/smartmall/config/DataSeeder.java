@@ -23,38 +23,38 @@ public class DataSeeder implements CommandLineRunner {
         // Se la tabella utenti è vuota, inseriamo i dati di test
         if (userRepository.count() == 0) {
 
-           
+            //Creiamo un Utente (Customer) che ha ID = 1
             User customer = new User();
             customer.setEmail("customer@test.com");
             customer.setPassword(passwordEncoder.encode("password123"));
             customer.setRole(Role.CUSTOMER);
             userRepository.save(customer);
 
-            
+            //Creiamo un Merchant (ID = 2)
             User merchant = new User();
             merchant.setEmail("merchant@test.com");
             merchant.setPassword(passwordEncoder.encode("password123"));
             merchant.setRole(Role.MERCHANT);
             userRepository.save(merchant);
 
-           
+            //Creiamo un Negozio per questo Merchant (ID = 1)
             Store store = new Store();
             store.setName("Apple Store");
             store.setMerchant(merchant);
             storeRepository.save(store);
 
-           
+            //Creiamo la regola di orari per il SABATO (giorno 6)
             AvailabilityRule rule = new AvailabilityRule();
             rule.setStore(store);
             rule.setDayOfWeek(6); // 6 = Sabato
             rule.setStartTime(LocalTime.of(9, 0));  // Apre alle 09:00
             rule.setEndTime(LocalTime.of(18, 0));   // Chiude alle 18:00
             rule.setSlotMinutes(30);                // Slot ogni mezz'ora
-            rule.setCapacityPerSlot(2);             // solo 2 posti
+            rule.setCapacityPerSlot(2);             // SOLO 2 POSTI! (Così testeremo l'overbooking)
             rule.setActive(true);
             ruleRepository.save(rule);
 
-            System.out.println("Dati di test inseriti con successo nel Database!");
+            System.out.println("✅ Dati di test inseriti con successo nel Database!");
         }
     }
 }

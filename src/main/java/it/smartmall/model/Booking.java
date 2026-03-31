@@ -29,7 +29,7 @@ public class Booking {
     @Column(nullable = false)
     private LocalDateTime endDateTime;   // Quando finisce lo slot
 
-    // Punto 3: Vengono create direttamente come CONFIRMED
+    // Le prenotazioni vengono create direttamente come CONFIRMED
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private BookingStatus status = BookingStatus.CONFIRMED;
