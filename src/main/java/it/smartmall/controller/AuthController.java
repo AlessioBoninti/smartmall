@@ -59,12 +59,7 @@ public class AuthController {
         newUser.setEmail(request.getEmail());
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        if (request.getRole() != null && request.getRole().equalsIgnoreCase("MERCHANT")) {
-            newUser.setRole(Role.MERCHANT);
-        } else {
-            newUser.setRole(Role.CUSTOMER);
-        }
-
+        newUser.setRole(Role.CUSTOMER);
         userRepository.save(newUser);
 
         return ResponseEntity.ok(

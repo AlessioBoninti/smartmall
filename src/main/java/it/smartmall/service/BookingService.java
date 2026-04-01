@@ -54,6 +54,16 @@ public class BookingService {
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Orario non valido o fuori dalle regole di disponibilità del negozio"));
 
+
+        //CONTROLLO ALLINEAMENTO SLOT
+        long minutesFromStart = java.time.Duration.between(activeRule.getStartTime(), time).toMinutes();
+
+        if (minutesFromStart % activeRule.getSlotMinutes() != 0) {
+            throw new RuntimeException("Formato orario non valido. Gli slot per questo negozio sono ogni "
+                    + activeRule.getSlotMinutes() + " minuti a partire dalle " + activeRule.getStartTime());
+        }
+
+
         // PREVENZIONE OVERBOOKING (Capienza REALE)
         int capacity = activeRule.getCapacityPerSlot();
 
