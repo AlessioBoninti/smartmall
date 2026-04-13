@@ -23,8 +23,12 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Chiunque può fare login e vedere gli slot liberi
-                        .requestMatchers("/api/auth/**", "/api/slots/**").permitAll()
+                        // VECCHIO CODICE // Chiunque può fare login e vedere gli slot libero
+                        // .requestMatchers("/api/auth/**", "/api/slots/**").permitAll()
+
+                        // NUOVO CODICE // Solo le GET sono pubbliche!
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/slots/**").permitAll()
 
                         //Permettiamo a tutti solo di LEGGERE (GET) la lista dei negozi
                         .requestMatchers(HttpMethod.GET, "/api/stores").permitAll()

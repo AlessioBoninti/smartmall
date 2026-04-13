@@ -6,11 +6,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
 
 import java.time.LocalTime;
 
 @Component
 @RequiredArgsConstructor
+@Profile("dev") //
 public class DataSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;
@@ -21,7 +23,7 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         // Se la tabella utenti è vuota, inseriamo i dati di test
-        if (userRepository.count() == 0) {
+        if (userRepository.findByEmail("merchant@test.com").isEmpty()) {
 
             //Creiamo un Utente (Customer) che ha ID = 1
             User customer = new User();
@@ -54,7 +56,9 @@ public class DataSeeder implements CommandLineRunner {
             rule.setActive(true);
             ruleRepository.save(rule);
 
-            System.out.println("✅ Dati di test inseriti con successo nel Database!");
+            System.out.println("Dati di test (Mario Rossi, Apple Store) inseriti con successo!");
+        } else {
+            System.out.println("Dati di test già presenti");
         }
     }
 }
