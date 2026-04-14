@@ -19,46 +19,38 @@ public class BookingController {
     private final BookingService bookingService;
 
     @PostMapping
-    public ResponseEntity<?> createBooking(
+    public ResponseEntity<BookingResponseDTO> createBooking(
             @Valid @RequestBody BookingRequestDTO requestDTO,
-            @AuthenticationPrincipal User currentUser) { // MAGIA! Spring mette qui l'utente del Token
-        try {
-            Booking createdBooking = bookingService.createBooking(requestDTO, currentUser);
+            @AuthenticationPrincipal User currentUser) {
 
-            BookingResponseDTO responseDTO = new BookingResponseDTO();
-            responseDTO.setId(createdBooking.getId());
-            responseDTO.setStoreId(createdBooking.getStore().getId());
-            responseDTO.setCustomerId(createdBooking.getCustomer().getId());
-            responseDTO.setStartDateTime(createdBooking.getStartDateTime());
-            responseDTO.setEndDateTime(createdBooking.getEndDateTime());
-            responseDTO.setStatus(createdBooking.getStatus().name());
+        Booking createdBooking = bookingService.createBooking(requestDTO, currentUser);
 
-            return ResponseEntity.ok(responseDTO);
+        BookingResponseDTO responseDTO = new BookingResponseDTO();
+        responseDTO.setId(createdBooking.getId());
+        responseDTO.setStoreId(createdBooking.getStore().getId());
+        responseDTO.setCustomerId(createdBooking.getCustomer().getId());
+        responseDTO.setStartDateTime(createdBooking.getStartDateTime());
+        responseDTO.setEndDateTime(createdBooking.getEndDateTime());
+        responseDTO.setStatus(createdBooking.getStatus().name());
 
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        return ResponseEntity.ok(responseDTO);
     }
 
     @PatchMapping("/{id}/cancel")
-    public ResponseEntity<?> cancelBooking(
+    public ResponseEntity<BookingResponseDTO> cancelBooking(
             @PathVariable Long id,
-            @AuthenticationPrincipal User currentUser) { // MAGIA!
-        try {
-            Booking cancelledBooking = bookingService.cancelBooking(id, currentUser);
+            @AuthenticationPrincipal User currentUser) {
 
-            BookingResponseDTO responseDTO = new BookingResponseDTO();
-            responseDTO.setId(cancelledBooking.getId());
-            responseDTO.setStoreId(cancelledBooking.getStore().getId());
-            responseDTO.setCustomerId(cancelledBooking.getCustomer().getId());
-            responseDTO.setStartDateTime(cancelledBooking.getStartDateTime());
-            responseDTO.setEndDateTime(cancelledBooking.getEndDateTime());
-            responseDTO.setStatus(cancelledBooking.getStatus().name());
+        Booking cancelledBooking = bookingService.cancelBooking(id, currentUser);
 
-            return ResponseEntity.ok(responseDTO);
+        BookingResponseDTO responseDTO = new BookingResponseDTO();
+        responseDTO.setId(cancelledBooking.getId());
+        responseDTO.setStoreId(cancelledBooking.getStore().getId());
+        responseDTO.setCustomerId(cancelledBooking.getCustomer().getId());
+        responseDTO.setStartDateTime(cancelledBooking.getStartDateTime());
+        responseDTO.setEndDateTime(cancelledBooking.getEndDateTime());
+        responseDTO.setStatus(cancelledBooking.getStatus().name());
 
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        return ResponseEntity.ok(responseDTO);
     }
 }

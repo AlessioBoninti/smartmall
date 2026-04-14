@@ -1,19 +1,26 @@
 package it.smartmall.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonIgnore; // <-- 1. NUOVO IMPORT
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "stores")
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Store {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Column(nullable = false)
@@ -22,12 +29,11 @@ public class Store {
     // Ogni negozio è gestito da un MERCHANT (che è un User)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "merchant_id", nullable = false)
-    @JsonIgnore // <-- 2. AGGIUNTO QUESTO: nasconde il merchant dal JSON
+    @JsonIgnore
     private User merchant;
 
     // Gestione per la Sospensione di un negozio
     private LocalDateTime suspendedFrom;
     private LocalDateTime suspendedTo;
     private String suspendedReason;
-
 }

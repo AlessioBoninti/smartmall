@@ -108,6 +108,14 @@ public class BookingService {
             throw new RuntimeException("Non puoi cancellare una prenotazione passata o già iniziata");
         }
 
+        // Impostiamo un limite per le cancellazioni: non si può cancellare a meno di 12 ore dall'appuntamento
+        LocalDateTime limiteMassimoCancellazione = booking.getStartDateTime().minusHours(12);
+
+        if (LocalDateTime.now().isAfter(limiteMassimoCancellazione)) {
+            throw new RuntimeException("Le prenotazioni possono essere cancellate solo con almeno 12 ore di preavviso.");
+        }
+
+
         // CONTROLLO DI SICUREZZA E OWNERSHIP (Broken Access Control)
         if (currentUser.getRole() == Role.CUSTOMER) {
             // Se sei un cliente, puoi cancellare solo le TUE prenotazioni

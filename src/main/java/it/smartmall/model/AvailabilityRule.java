@@ -1,20 +1,27 @@
 package it.smartmall.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
 import java.time.LocalTime;
 
 @Entity
 @Table(name = "availability_rules")
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class AvailabilityRule {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     // Relazione: Ogni regola appartiene a un Negozio
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY) // <-- AGGIUNTO
     @JoinColumn(name = "store_id", nullable = false)
     private Store store;
 
