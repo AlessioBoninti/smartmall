@@ -21,12 +21,12 @@ public class Booking {
     private Long id;
 
     // Relazione: Molte prenotazioni sono fatte da un singolo Utente
-    @ManyToOne(fetch = FetchType.LAZY) // <-- AGGIUNTO: Risparmia memoria!
+    @ManyToOne(fetch = FetchType.LAZY) //Risparmia memoria
     @JoinColumn(name = "customer_id", nullable = false)
     private User customer;
 
     // Relazione: Molte prenotazioni appartengono a un singolo Negozio
-    @ManyToOne(fetch = FetchType.LAZY) // <-- AGGIUNTO: Risparmia memoria!
+    @ManyToOne(fetch = FetchType.LAZY) //Risparmia memoria
     @JoinColumn(name = "store_id", nullable = false)
     private Store store;
 

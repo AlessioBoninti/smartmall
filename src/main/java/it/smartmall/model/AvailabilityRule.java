@@ -21,7 +21,7 @@ public class AvailabilityRule {
     private Long id;
 
     // Relazione: Ogni regola appartiene a un Negozio
-    @ManyToOne(fetch = FetchType.LAZY) // <-- AGGIUNTO
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "store_id", nullable = false)
     private Store store;
 
