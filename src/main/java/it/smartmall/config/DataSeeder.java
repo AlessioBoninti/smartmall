@@ -12,7 +12,7 @@ import java.time.LocalTime;
 
 @Component
 @RequiredArgsConstructor
-@Profile("dev") //
+@Profile("dev")
 public class DataSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;
@@ -22,41 +22,43 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Se la tabella utenti è vuota, inseriamo i dati di test
         if (userRepository.findByEmail("merchant@test.com").isEmpty()) {
 
-            //Creiamo un Utente (Customer) che ha ID = 1
             User customer = new User();
             customer.setEmail("customer@test.com");
             customer.setPassword(passwordEncoder.encode("password123"));
             customer.setRole(Role.CUSTOMER);
             userRepository.save(customer);
 
-            //Creiamo un Merchant (ID = 2)
             User merchant = new User();
             merchant.setEmail("merchant@test.com");
             merchant.setPassword(passwordEncoder.encode("password123"));
             merchant.setRole(Role.MERCHANT);
             userRepository.save(merchant);
 
-            //Creiamo un Negozio per questo Merchant (ID = 1)
+            User admin = new User();
+            admin.setEmail("admin@test.com");
+            admin.setPassword(passwordEncoder.encode("password123"));
+            admin.setRole(Role.SUPER_ADMIN);
+            userRepository.save(admin);
+
             Store store = new Store();
             store.setName("Apple Store");
             store.setMerchant(merchant);
+            store.setStatus(StoreStatus.ACTIVE);
             storeRepository.save(store);
 
-            //Creiamo la regola di orari per il SABATO (giorno 6)
             AvailabilityRule rule = new AvailabilityRule();
             rule.setStore(store);
-            rule.setDayOfWeek(6); // 6 = Sabato
-            rule.setStartTime(LocalTime.of(9, 0));  // Apre alle 09:00
-            rule.setEndTime(LocalTime.of(18, 0));   // Chiude alle 18:00
-            rule.setSlotMinutes(30);                // Slot ogni mezz'ora
-            rule.setCapacityPerSlot(2);             // SOLO 2 POSTI! (Così testeremo l'overbooking)
+            rule.setDayOfWeek(6);
+            rule.setStartTime(LocalTime.of(9, 0));
+            rule.setEndTime(LocalTime.of(18, 0));
+            rule.setSlotMinutes(30);
+            rule.setCapacityPerSlot(2);
             rule.setActive(true);
             ruleRepository.save(rule);
 
-            System.out.println("Dati di test (Mario Rossi, Apple Store) inseriti con successo!");
+            System.out.println("Dati di test (customer, merchant, admin, store) inseriti con successo!");
         } else {
             System.out.println("Dati di test già presenti");
         }

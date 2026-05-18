@@ -17,12 +17,12 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-@EqualsAndHashCode(onlyExplicitlyIncluded = true) // <-- Regola aurea di JPA
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include // <-- Diciamo a Lombok di usare SOLO questo campo per equals()
+    @EqualsAndHashCode.Include //  Diciamo a Lombok di usare SOLO questo campo per equals()
     private Long id;
 
     @Column(nullable = false, unique = true)
@@ -35,9 +35,9 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private Role role;
 
-    // =======================================================
+
     // METODI DI "UserDetails" OBBLIGATORI PER SPRING SECURITY
-    // =======================================================
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

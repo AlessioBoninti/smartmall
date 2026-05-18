@@ -5,7 +5,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.EqualsAndHashCode;
+
 import java.time.LocalDateTime;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -32,7 +34,15 @@ public class Store {
     @JsonIgnore
     private User merchant;
 
-    // Gestione per la Sospensione di un negozio
+    // Stato dello store:
+    // ACTIVE = operativo
+    // SUSPENDED = temporaneamente non prenotabile
+    // CLOSED = chiuso definitivamente
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StoreStatus status = StoreStatus.ACTIVE;
+
+    // Dati validi quando lo store è SUSPENDED
     private LocalDateTime suspendedFrom;
     private LocalDateTime suspendedTo;
     private String suspendedReason;

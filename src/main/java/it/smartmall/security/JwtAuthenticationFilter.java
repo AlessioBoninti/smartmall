@@ -30,7 +30,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String jwt;
         final String userEmail;
 
-        // Se non c'tè l'header "Authorization" o non inizia con "Bearer ", ignoriamo e andiamo avanti
+        // Se non c'è l'header "Authorization" o non inizia con "Bearer ", ignoriamo e andiamo avanti
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -58,7 +58,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        // Passiamo la palla al prossimo filtro o al Controller
+        // Passiamo al prossimo filtro o al Controller
         filterChain.doFilter(request, response);
     }
 }

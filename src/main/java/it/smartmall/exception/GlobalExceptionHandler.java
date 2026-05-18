@@ -14,10 +14,14 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // 1. Risorsa non trovata -> 404 NOT FOUND
-    @ExceptionHandler(StoreNotFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handleStoreNotFound(
-            StoreNotFoundException ex,
+    // 1. Risorse non trovate -> 404 NOT FOUND
+    @ExceptionHandler({
+            StoreNotFoundException.class,
+            BookingNotFoundException.class,
+            UserNotFoundException.class
+    })
+    public ResponseEntity<ErrorResponseDTO> handleNotFoundExceptions(
+            RuntimeException ex,
             HttpServletRequest request) {
 
         ErrorResponseDTO error = new ErrorResponseDTO(
@@ -32,7 +36,11 @@ public class GlobalExceptionHandler {
     }
 
     // 2. Conflitti di business -> 409 CONFLICT
-    @ExceptionHandler({SlotFullException.class, StoreSuspendedException.class})
+    @ExceptionHandler({
+            SlotFullException.class,
+            StoreSuspendedException.class,
+            StoreClosedException.class
+    })
     public ResponseEntity<ErrorResponseDTO> handleConflictExceptions(
             RuntimeException ex,
             HttpServletRequest request) {
@@ -120,9 +128,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
-    // 7. Tutte le altre eccezioni generiche -> 400 BAD REQUEST
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ErrorResponseDTO> handleRuntimeException(
+    // 7. Errori di business / richiesta non valida -> 400 BAD REQUEST
+    @ExceptionHandler({
+            BookingTooLateException.class,
+            InvalidSlotException.class,
+            BookingAlreadyCancelledException.class,
+            PastBookingCancellationException.class,
+            CancellationTooLateException.class,
+            RoleChangeNotAllowedException.class,
+            InvalidStoreSuspensionException.class
+    })
+    public ResponseEntity<ErrorResponseDTO> handleBadRequestBusinessExceptions(
             RuntimeException ex,
             HttpServletRequest request) {
 
@@ -135,5 +151,22 @@ public class GlobalExceptionHandler {
         );
 
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    // 8. Tutte le altre eccezioni generiche -> 500 INTERNAL SERVER ERROR
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorResponseDTO> handleRuntimeException(
+            RuntimeException ex,
+            HttpServletRequest request) {
+
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                LocalDateTime.now(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Internal Server Error",
+                "Si è verificato un errore imprevisto.",
+                request.getRequestURI()
+        );
+
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

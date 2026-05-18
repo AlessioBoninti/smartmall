@@ -15,7 +15,6 @@ public class UserController {
     @GetMapping
     public ResponseEntity<MeResponseDTO> getCurrentUser(@AuthenticationPrincipal User currentUser) {
 
-        // Trasformiamo l'utente loggato nel DTO da inviare a React
         MeResponseDTO response = MeResponseDTO.builder()
                 .id(currentUser.getId())
                 .email(currentUser.getEmail())

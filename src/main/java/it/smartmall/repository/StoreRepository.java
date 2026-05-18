@@ -1,6 +1,7 @@
 package it.smartmall.repository;
 
 import it.smartmall.model.Store;
+import it.smartmall.model.StoreStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -16,10 +17,9 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
 
     List<Store> findByMerchantId(Long merchantId);
 
-    // Questa query applica il "FOR UPDATE" al database!
-    // Blocca la riga del negozio finché la transazione non è finita.
+    List<Store> findByStatus(StoreStatus status);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM Store s WHERE s.id = :id")
     Optional<Store> findByIdWithLock(@Param("id") Long id);
-
 }

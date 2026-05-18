@@ -25,26 +25,23 @@ public class BookingService {
     @Transactional
     public Booking createBooking(BookingRequestDTO dto, User customer) {
 
-        // ROW LOCK: Blocchiamo il negozio
         Store store = storeRepository.findByIdWithLock(dto.getStoreId())
-                .orElseThrow(() -> new StoreNotFoundException("Store non trovato")); // <-- ECCEZIONE SPECIFICA
+                .orElseThrow(() -> new StoreNotFoundException("Store non trovato"));
 
-        // VERIFICA SOSPENSIONE
-        if (store.getSuspendedFrom() != null && store.getSuspendedTo() != null) {
-            LocalDateTime now = LocalDateTime.now();
-            if (now.isAfter(store.getSuspendedFrom()) && now.isBefore(store.getSuspendedTo())) {
-                throw new StoreSuspendedException("Lo store è momentaneamente sospeso: " + store.getSuspendedReason()); // <-- ECCEZIONE SPECIFICA
-            }
+        if (store.getStatus() == StoreStatus.CLOSED) {
+            throw new StoreClosedException("Lo store è chiuso definitivamente e non accetta più prenotazioni.");
         }
 
-        // PREAVVISO DI 5 ORE MINIME
+        if (store.getStatus() == StoreStatus.SUSPENDED) {
+            throw new StoreSuspendedException("Lo store è momentaneamente sospeso: " + store.getSuspendedReason());
+        }
+
         LocalDateTime limiteMassimoPrenotazione = dto.getStartDateTime().minusHours(5);
 
         if (LocalDateTime.now().isAfter(limiteMassimoPrenotazione)) {
-            throw new RuntimeException("Le prenotazioni devono essere effettuate con almeno 5 ore di anticipo rispetto all'orario dello slot.");
+            throw new BookingTooLateException("Le prenotazioni devono essere effettuate con almeno 5 ore di anticipo rispetto all'orario dello slot.");
         }
 
-        // RECUPERO REGOLA DI DISPONIBILITÀ
         int dayOfWeek = dto.getStartDateTime().getDayOfWeek().getValue();
         LocalTime time = dto.getStartDateTime().toLocalTime();
 
@@ -53,27 +50,24 @@ public class BookingService {
         AvailabilityRule activeRule = rules.stream()
                 .filter(rule -> (time.equals(rule.getStartTime()) || time.isAfter(rule.getStartTime())) && time.isBefore(rule.getEndTime()))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Orario non valido o fuori dalle regole di disponibilità del negozio"));
+                .orElseThrow(() -> new InvalidSlotException("Orario non valido o fuori dalle regole di disponibilità del negozio"));
 
-        // CONTROLLO ALLINEAMENTO SLOT
         long minutesFromStart = java.time.Duration.between(activeRule.getStartTime(), time).toMinutes();
 
         if (minutesFromStart % activeRule.getSlotMinutes() != 0) {
-            throw new RuntimeException("Formato orario non valido. Gli slot per questo negozio sono ogni "
+            throw new InvalidSlotException("Formato orario non valido. Gli slot per questo negozio sono ogni "
                     + activeRule.getSlotMinutes() + " minuti a partire dalle " + activeRule.getStartTime());
         }
 
-        // PREVENZIONE OVERBOOKING (Capienza REALE)
         int capacity = activeRule.getCapacityPerSlot();
 
         int prenotazioniEsistenti = bookingRepository.countByStoreIdAndStartDateTimeAndStatus(
                 store.getId(), dto.getStartDateTime(), BookingStatus.CONFIRMED);
 
         if (prenotazioniEsistenti >= capacity) {
-            throw new SlotFullException("SLOT_FULL: Nessun posto disponibile per questo orario"); // <-- ECCEZIONE SPECIFICA
+            throw new SlotFullException("SLOT_FULL: Nessun posto disponibile per questo orario");
         }
 
-        // REGOLE ANTI-SPAM (Fair Play)
         boolean hasAlreadyBooked = bookingRepository.existsByCustomerIdAndStoreIdAndStartDateTimeAndStatus(
                 customer.getId(), store.getId(), dto.getStartDateTime(), BookingStatus.CONFIRMED);
 
@@ -81,57 +75,52 @@ public class BookingService {
             throw new SlotFullException("Hai già effettuato una prenotazione per questo orario in questo negozio. Non puoi occupare più posti.");
         }
 
-        // CREAZIONE PRENOTAZIONE
         Booking booking = new Booking();
         booking.setCustomer(customer);
         booking.setStore(store);
         booking.setStartDateTime(dto.getStartDateTime());
-        booking.setEndDateTime(dto.getStartDateTime().plusMinutes(activeRule.getSlotMinutes())); // Durata reale!
+        booking.setEndDateTime(dto.getStartDateTime().plusMinutes(activeRule.getSlotMinutes()));
         booking.setStatus(BookingStatus.CONFIRMED);
 
         return bookingRepository.save(booking);
     }
 
+    @Transactional(readOnly = true)
+    public List<Booking> getMyBookings(User currentUser) {
+        return bookingRepository.findByCustomerIdOrderByStartDateTimeDesc(currentUser.getId());
+    }
+
     @Transactional
     public Booking cancelBooking(Long bookingId, User currentUser) {
-        // Troviamo la prenotazione
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Prenotazione non trovata"));
+                .orElseThrow(() -> new BookingNotFoundException("Prenotazione non trovata"));
 
-        // Controllo Stato: È già cancellata?
         if (booking.getStatus() == BookingStatus.CANCELLED) {
-            throw new RuntimeException("La prenotazione è già stata cancellata");
+            throw new BookingAlreadyCancelledException("La prenotazione è già stata cancellata");
         }
 
-        // Controllo Temporale: Lo slot è già passato? (Vale per entrambi)
         if (LocalDateTime.now().isAfter(booking.getStartDateTime())) {
-            throw new RuntimeException("Non puoi cancellare una prenotazione passata o già iniziata");
+            throw new PastBookingCancellationException("Non puoi cancellare una prenotazione passata o già iniziata");
         }
 
-        // Impostiamo un limite per le cancellazioni: non si può cancellare a meno di 12 ore dall'appuntamento
         LocalDateTime limiteMassimoCancellazione = booking.getStartDateTime().minusHours(12);
 
         if (LocalDateTime.now().isAfter(limiteMassimoCancellazione)) {
-            throw new RuntimeException("Le prenotazioni possono essere cancellate solo con almeno 12 ore di preavviso.");
+            throw new CancellationTooLateException("Le prenotazioni possono essere cancellate solo con almeno 12 ore di preavviso.");
         }
 
-
-        // CONTROLLO DI SICUREZZA E OWNERSHIP (Broken Access Control)
         if (currentUser.getRole() == Role.CUSTOMER) {
-            // Se sei un cliente, puoi cancellare solo le TUE prenotazioni
             if (!booking.getCustomer().getId().equals(currentUser.getId())) {
-                throw new UnauthorizedBookingAccessException("Non sei autorizzato a cancellare questa prenotazione"); // <-- ECCEZIONE SPECIFICA
+                throw new UnauthorizedBookingAccessException("Non sei autorizzato a cancellare questa prenotazione");
             }
         } else if (currentUser.getRole() == Role.MERCHANT) {
-            // Se sei un negoziante, puoi cancellare solo le prenotazioni dei TUOI negozi
             if (!booking.getStore().getMerchant().getId().equals(currentUser.getId())) {
-                throw new UnauthorizedBookingAccessException("Non sei il gestore di questo negozio"); // <-- ECCEZIONE SPECIFICA
+                throw new UnauthorizedBookingAccessException("Non sei il gestore di questo negozio");
             }
         } else {
-            throw new UnauthorizedBookingAccessException("Il tuo ruolo non ti permette di cancellare prenotazioni"); // <-- ECCEZIONE SPECIFICA
+            throw new UnauthorizedBookingAccessException("Il tuo ruolo non ti permette di cancellare prenotazioni");
         }
 
-        // Eseguiamo la cancellazione
         booking.setStatus(BookingStatus.CANCELLED);
         return bookingRepository.save(booking);
     }

@@ -3,7 +3,7 @@ package it.smartmall.dto;
 import lombok.Data;
 
 @Data
-public class StoreDTO {
+public class MerchantStoreDTO {
     private Long id;
     private String name;
     private String status;
