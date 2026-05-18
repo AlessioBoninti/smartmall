@@ -2,11 +2,13 @@ package it.smartmall.controller;
 
 import it.smartmall.dto.*;
 import it.smartmall.exception.InvalidStoreSuspensionException;
+import it.smartmall.exception.RoleChangeRequestException;
 import it.smartmall.exception.RoleChangeNotAllowedException;
 import it.smartmall.exception.StoreNotFoundException;
 import it.smartmall.exception.UserNotFoundException;
 import it.smartmall.model.*;
 import it.smartmall.repository.BookingRepository;
+import it.smartmall.repository.RoleChangeRequestRepository;
 import it.smartmall.repository.StoreRepository;
 import it.smartmall.repository.UserRepository;
 import jakarta.validation.Valid;
@@ -26,6 +28,7 @@ public class AdminController {
     private final UserRepository userRepository;
     private final StoreRepository storeRepository;
     private final BookingRepository bookingRepository;
+    private final RoleChangeRequestRepository roleChangeRequestRepository;
 
     @GetMapping("/users")
     public ResponseEntity<List<AdminUserDTO>> getAllUsers() {
@@ -65,6 +68,58 @@ public class AdminController {
         response.setRole(targetUser.getRole().name());
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/role-requests")
+    public ResponseEntity<List<RoleChangeRequestDTO>> getRoleChangeRequests() {
+        List<RoleChangeRequestDTO> response = roleChangeRequestRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::mapRoleChangeRequestToDto)
+                .toList();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/role-requests/{id}/approve")
+    public ResponseEntity<RoleChangeRequestDTO> approveRoleChangeRequest(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User currentUser) {
+
+        RoleChangeRequest request = roleChangeRequestRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("Richiesta cambio ruolo non trovata"));
+
+        if (request.getStatus() != RoleChangeRequestStatus.PENDING) {
+            throw new RoleChangeRequestException("Questa richiesta è già stata valutata");
+        }
+
+        User requester = request.getRequester();
+        requester.setRole(request.getRequestedRole());
+        userRepository.save(requester);
+
+        request.setStatus(RoleChangeRequestStatus.APPROVED);
+        request.setReviewedAt(LocalDateTime.now());
+        request.setReviewedBy(currentUser);
+
+        return ResponseEntity.ok(mapRoleChangeRequestToDto(roleChangeRequestRepository.save(request)));
+    }
+
+    @PatchMapping("/role-requests/{id}/reject")
+    public ResponseEntity<RoleChangeRequestDTO> rejectRoleChangeRequest(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User currentUser) {
+
+        RoleChangeRequest request = roleChangeRequestRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("Richiesta cambio ruolo non trovata"));
+
+        if (request.getStatus() != RoleChangeRequestStatus.PENDING) {
+            throw new RoleChangeRequestException("Questa richiesta è già stata valutata");
+        }
+
+        request.setStatus(RoleChangeRequestStatus.REJECTED);
+        request.setReviewedAt(LocalDateTime.now());
+        request.setReviewedBy(currentUser);
+
+        return ResponseEntity.ok(mapRoleChangeRequestToDto(roleChangeRequestRepository.save(request)));
     }
 
     @GetMapping("/stores")
@@ -175,6 +230,25 @@ public class AdminController {
         dto.setSuspendedFrom(store.getSuspendedFrom());
         dto.setSuspendedTo(store.getSuspendedTo());
         dto.setSuspendedReason(store.getSuspendedReason());
+        return dto;
+    }
+
+    private RoleChangeRequestDTO mapRoleChangeRequestToDto(RoleChangeRequest request) {
+        RoleChangeRequestDTO dto = new RoleChangeRequestDTO();
+        dto.setId(request.getId());
+        dto.setRequesterId(request.getRequester().getId());
+        dto.setRequesterEmail(request.getRequester().getEmail());
+        dto.setRequestedRole(request.getRequestedRole().name());
+        dto.setStatus(request.getStatus().name());
+        dto.setReason(request.getReason());
+        dto.setCreatedAt(request.getCreatedAt());
+        dto.setReviewedAt(request.getReviewedAt());
+
+        if (request.getReviewedBy() != null) {
+            dto.setReviewedById(request.getReviewedBy().getId());
+            dto.setReviewedByEmail(request.getReviewedBy().getEmail());
+        }
+
         return dto;
     }
 }

@@ -37,10 +37,12 @@ public class SecurityConfig {
 
                         // AUTENTICATI
                         .requestMatchers("/api/me").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/me/merchant-request").hasRole("CUSTOMER")
 
                         // CUSTOMER
                         .requestMatchers(HttpMethod.POST, "/api/bookings").hasRole("CUSTOMER")
                         .requestMatchers(HttpMethod.GET, "/api/bookings/my").hasRole("CUSTOMER")
+                        .requestMatchers(HttpMethod.POST, "/api/me/merchant-request").hasRole("CUSTOMER")
 
                         // CANCEL BOOKING: customer e merchant
                         .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/cancel").hasAnyRole("CUSTOMER", "MERCHANT")

@@ -34,6 +34,16 @@ public class AvailabilityRule {
     @Column(nullable = false)
     private LocalTime endTime;
 
+    private LocalTime morningStartTime;
+
+    private LocalTime morningEndTime;
+
+    private LocalTime afternoonStartTime;
+
+    private LocalTime afternoonEndTime;
+
+    private Boolean closed = false;
+
     @Column(nullable = false)
     private Integer slotMinutes;
 

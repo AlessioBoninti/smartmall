@@ -53,6 +53,10 @@ public class DataSeeder implements CommandLineRunner {
             rule.setDayOfWeek(6);
             rule.setStartTime(LocalTime.of(9, 0));
             rule.setEndTime(LocalTime.of(18, 0));
+            rule.setMorningStartTime(LocalTime.of(9, 0));
+            rule.setMorningEndTime(LocalTime.of(13, 0));
+            rule.setAfternoonStartTime(LocalTime.of(14, 0));
+            rule.setAfternoonEndTime(LocalTime.of(18, 0));
             rule.setSlotMinutes(30);
             rule.setCapacityPerSlot(2);
             rule.setActive(true);

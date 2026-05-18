@@ -136,7 +136,8 @@ public class GlobalExceptionHandler {
             PastBookingCancellationException.class,
             CancellationTooLateException.class,
             RoleChangeNotAllowedException.class,
-            InvalidStoreSuspensionException.class
+            InvalidStoreSuspensionException.class,
+            RoleChangeRequestException.class
     })
     public ResponseEntity<ErrorResponseDTO> handleBadRequestBusinessExceptions(
             RuntimeException ex,
