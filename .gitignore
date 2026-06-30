@@ -1,0 +1,27 @@
+# IDE e sistema
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Java / Maven
+target/
+*.class
+
+# Frontend / Vite
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+
+# Log
+*.log
+
+# Variabili d'ambiente
+.env
+.env.*
+
+# File temporanei
+*.tmp
+*.temp
