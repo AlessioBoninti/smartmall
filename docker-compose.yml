@@ -4,12 +4,47 @@ services:
     container_name: smartmall-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
       MYSQL_DATABASE: smartmall
     ports:
       - "3306:3306"
     volumes:
       - smartmall-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p${DB_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartmall-backend
+    restart: unless-stopped
+    environment:
+      DB_URL: ${DB_URL:-jdbc:mysql://mysql:3306/smartmall?serverTimezone=UTC}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      DB_USERNAME: ${DB_USERNAME:-root}
+      JWT_SECRET: ${JWT_SECRET:-01234567890123456789012345678901}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+    container_name: smartmall-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
 
 volumes:
   smartmall-mysql-data:

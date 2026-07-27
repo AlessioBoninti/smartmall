@@ -1,8 +1,9 @@
-import { getXsrfToken } from "./auth.js";
-
 export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+let authTokenProvider = null;
 
-const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+export function setAuthTokenProvider(provider) {
+  authTokenProvider = provider;
+}
 
 export class ApiError extends Error {
   constructor(message, status = 0, data = null) {
@@ -13,29 +14,6 @@ export class ApiError extends Error {
   }
 }
 
-export async function ensureCsrfToken(forceRefresh = false) {
-  if (!forceRefresh && getXsrfToken()) {
-    return getXsrfToken();
-  }
-
-  const response = await fetch(`${API_URL}/api/auth/csrf`, {
-    method: "GET",
-    credentials: "include",
-  });
-  const data = await readResponseData(response);
-
-  if (!response.ok) {
-    throw new ApiError(resolveErrorMessage(response.status, data), response.status, data);
-  }
-
-  const token = getXsrfToken();
-  if (!token) {
-    throw new ApiError("Token CSRF non disponibile.", response.status, data);
-  }
-
-  return token;
-}
-
 export async function apiFetch(path, { method = "GET", body } = {}) {
   const upperMethod = method.toUpperCase();
   const headers = {};
@@ -44,8 +22,11 @@ export async function apiFetch(path, { method = "GET", body } = {}) {
     headers["Content-Type"] = "application/json";
   }
 
-  if (MUTATING_METHODS.has(upperMethod)) {
-    headers["X-XSRF-TOKEN"] = await ensureCsrfToken();
+  if (authTokenProvider) {
+    const token = await authTokenProvider();
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
   }
 
   const response = await fetch(`${API_URL}${path}`, {

@@ -4,7 +4,10 @@ import {
   LockKeyhole,
   LogOut,
 } from "lucide-react";
-import { apiFetch, ensureCsrfToken } from "./api.js";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { apiFetch, setAuthTokenProvider } from "./api.js";
+import { firebaseAuth } from "./firebase.js";
 import { RoleBadge, LoadingScreen } from "./components/Common.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import CustomerPage from "./pages/CustomerPage.jsx";
@@ -20,27 +23,39 @@ function App() {
   useEffect(() => {
     let ignore = false;
 
-    apiFetch("/api/me")
-      .then((user) => {
+    setAuthTokenProvider(async () => firebaseAuth.currentUser?.getIdToken() ?? null);
+
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
+      if (ignore) return;
+
+      if (!firebaseUser) {
+        setCurrentUser(null);
+        setBooting(false);
+        return;
+      }
+
+      try {
+        const user = await apiFetch("/api/me");
         if (!ignore) {
           setCurrentUser(user);
         }
-      })
-      .catch((error) => {
-        if (ignore) return;
-        setCurrentUser(null);
-        if (![401, 403].includes(error.status)) {
+      } catch (error) {
+        if (!ignore && ![401, 403].includes(error.status)) {
           setAuthError(error.message);
         }
-      })
-      .finally(() => {
+        if (!ignore) {
+          setCurrentUser(null);
+        }
+      } finally {
         if (!ignore) {
           setBooting(false);
         }
-      });
+      }
+    });
 
     return () => {
       ignore = true;
+      unsubscribe();
     };
   }, []);
 
@@ -49,8 +64,7 @@ function App() {
     setNotice("");
 
     try {
-      const user = await loginAndLoadUser(credentials);
-      setCurrentUser(user);
+      await signInWithEmailAndPassword(firebaseAuth, credentials.email, credentials.password);
     } catch (error) {
       setAuthError(error.message);
     }
@@ -61,26 +75,11 @@ function App() {
     setNotice("");
 
     try {
-      await apiFetch("/api/auth/register", {
-        method: "POST",
-        body: credentials,
-      });
-      const user = await loginAndLoadUser(credentials);
-      setCurrentUser(user);
+      await createUserWithEmailAndPassword(firebaseAuth, credentials.email, credentials.password);
       setNotice("Account creato con ruolo customer.");
     } catch (error) {
       setAuthError(error.message);
     }
-  }
-
-  async function loginAndLoadUser(credentials) {
-    await ensureCsrfToken();
-    await apiFetch("/api/auth/login", {
-      method: "POST",
-      body: credentials,
-    });
-    await ensureCsrfToken(true);
-    return apiFetch("/api/me");
   }
 
   async function handleLogout() {
@@ -88,19 +87,10 @@ function App() {
     setAuthError("");
 
     try {
-      await ensureCsrfToken();
-      await apiFetch("/api/auth/logout", { method: "POST" });
-    } catch (error) {
-      if (![401, 403].includes(error.status)) {
-        setAuthError(error.message);
-      }
-    } finally {
+      await signOut(firebaseAuth);
       setCurrentUser(null);
-      try {
-        await ensureCsrfToken(true);
-      } catch {
-        // The next mutating request will request a fresh CSRF token again.
-      }
+    } catch (error) {
+      setAuthError(error.message);
     }
   }
 
