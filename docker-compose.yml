@@ -26,7 +26,8 @@ services:
       DB_URL: ${DB_URL:-jdbc:mysql://mysql:3306/smartmall?serverTimezone=UTC}
       DB_PASSWORD: ${DB_PASSWORD:-root}
       DB_USERNAME: ${DB_USERNAME:-root}
-      JWT_SECRET: ${JWT_SECRET:-01234567890123456789012345678901}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-your-project-id}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${FIREBASE_SERVICE_ACCOUNT_JSON:-}
     depends_on:
       mysql:
         condition: service_healthy
@@ -38,7 +39,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY}
+        VITE_FIREBASE_AUTH_DOMAIN: ${VITE_FIREBASE_AUTH_DOMAIN}
+        VITE_FIREBASE_PROJECT_ID: ${VITE_FIREBASE_PROJECT_ID}
+        VITE_FIREBASE_APP_ID: ${VITE_FIREBASE_APP_ID}
     container_name: smartmall-frontend
     restart: unless-stopped
     depends_on:

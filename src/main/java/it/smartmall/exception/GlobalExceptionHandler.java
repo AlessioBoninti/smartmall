@@ -49,25 +49,7 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.FORBIDDEN, "Forbidden", ex.getMessage(), request);
     }
 
-    // 4. Credenziali non valide -> 401 UNAUTHORIZED
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<ErrorResponseDTO> handleInvalidCredentials(
-            InvalidCredentialsException ex,
-            HttpServletRequest request) {
-
-        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Unauthorized", ex.getMessage(), request);
-    }
-
-    // 5. Email gia usata -> 400 BAD REQUEST
-    @ExceptionHandler(EmailAlreadyUsedException.class)
-    public ResponseEntity<ErrorResponseDTO> handleEmailAlreadyUsed(
-            EmailAlreadyUsedException ex,
-            HttpServletRequest request) {
-
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage(), request);
-    }
-
-    // 6. Errori di validazione -> 400 BAD REQUEST
+    // 4. Errori di validazione -> 400 BAD REQUEST
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDTO> handleValidationExceptions(
             MethodArgumentNotValidException ex,
@@ -80,7 +62,7 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "Validation Error", errorMessage, request);
     }
 
-    // 7. Errori di business / richiesta non valida -> 400 BAD REQUEST
+    // 5. Errori di business / richiesta non valida -> 400 BAD REQUEST
     @ExceptionHandler({
             BookingTooLateException.class,
             InvalidSlotException.class,
@@ -98,7 +80,7 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage(), request);
     }
 
-    // 8. Tutte le altre eccezioni generiche -> 500 INTERNAL SERVER ERROR
+    // 6. Tutte le altre eccezioni generiche -> 500 INTERNAL SERVER ERROR
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponseDTO> handleRuntimeException(
             RuntimeException ex,

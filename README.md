@@ -1,6 +1,6 @@
 # SmartMall
 
-SmartMall è una web app responsive per gestire prenotazioni negli store di un centro commerciale. Il progetto è pensato come demo universitaria locale: mostra autenticazione, ruoli, gestione store, disponibilità orarie e prenotazioni.
+SmartMall è una web app responsive per gestire prenotazioni negli store di un centro commerciale. Include autenticazione, ruoli, gestione store, disponibilità orarie e prenotazioni.
 
 ## Funzionalità principali
 
@@ -16,11 +16,11 @@ SmartMall è una web app responsive per gestire prenotazioni negli store di un c
 
 - Frontend: React 18, Vite, JavaScript, CSS, lucide-react.
 - Backend: Java 17, Spring Boot 3.5, Spring Web, Spring Validation.
-- Sicurezza: Spring Security, JWT.
+- Sicurezza: Spring Security, Firebase Authentication, autorizzazione basata su ruoli.
 - Database: MySQL 8.
 - Persistenza: Spring Data JPA, Hibernate.
 - Build: Maven per backend, npm/Vite per frontend.
-- Docker: Docker Compose usato solo per avviare MySQL.
+- Docker: Docker Compose per avviare MySQL, backend e frontend.
 
 ## Prerequisiti
 
@@ -36,21 +36,26 @@ Per il backend servono queste variabili d'ambiente:
 
 ```powershell
 $env:DB_PASSWORD="root"
-$env:JWT_SECRET="01234567890123456789012345678901"
+$env:FIREBASE_PROJECT_ID="your-project-id"
+$env:FIREBASE_SERVICE_ACCOUNT_JSON="..."
 ```
 
 Per il frontend, opzionale:
 
 ```powershell
 $env:VITE_API_URL="http://localhost:8080"
+$env:VITE_FIREBASE_API_KEY="your-api-key"
+$env:VITE_FIREBASE_AUTH_DOMAIN="your-project.firebaseapp.com"
+$env:VITE_FIREBASE_PROJECT_ID="your-project-id"
+$env:VITE_FIREBASE_APP_ID="your-app-id"
 ```
 
-## Avvio MySQL con Docker
+## Avvio con Docker Compose
 
-Docker Compose avvia solo MySQL, non backend o frontend.
+Docker Compose avvia MySQL, backend e frontend.
 
 ```powershell
-docker compose up -d
+docker compose up --build
 ```
 
 Il database locale sarà disponibile su:
@@ -69,7 +74,8 @@ Dalla cartella principale del progetto:
 
 ```powershell
 $env:DB_PASSWORD="root"
-$env:JWT_SECRET="01234567890123456789012345678901"
+$env:FIREBASE_PROJECT_ID="your-project-id"
+$env:FIREBASE_SERVICE_ACCOUNT_JSON="..."
 .\mvnw.cmd spring-boot:run
 ```
 
@@ -89,13 +95,13 @@ npm install
 npm run dev
 ```
 
-Aprire la demo da:
+Aprire l'applicazione da:
 
 ```text
 http://localhost:5173
 ```
 
-Nota CORS: usare `http://localhost:5173`, non `http://127.0.0.1:5173`. Il backend autorizza esplicitamente solo `http://localhost:5173`.
+Nota CORS: usare `http://localhost:5173`, non `http://127.0.0.1:5173`. Il backend autorizza esplicitamente `localhost:5173` e `localhost:4173`.
 
 ## Credenziali demo
 
@@ -122,24 +128,12 @@ npm install
 npm run build
 ```
 
-## Flusso demo consigliato
-
-1. Avviare MySQL con Docker Compose.
-2. Avviare backend e frontend separatamente.
-3. Login come customer e prenotazione di uno slot. I dati demo creano disponibilità predefinita il sabato, quindi scegliere un sabato futuro.
-4. Cancellazione di una prenotazione con sufficiente anticipo.
-5. Richiesta per diventare merchant.
-6. Login come merchant demo e gestione disponibilità dello store già assegnato.
-7. Login come admin e gestione utenti, store e richieste ruolo.
-8. Spiegazione rapida di JWT, ruoli e protezione delle API.
-
 ## Info utili
 
-- Il progetto è una demo universitaria locale, non una configurazione di produzione.
-- Backend e frontend si avviano separatamente.
+- Il progetto usa una configurazione locale, non una configurazione di produzione.
 - Il database viene aggiornato automaticamente in sviluppo con `spring.jpa.hibernate.ddl-auto=update`.
 - Il progetto usa dati demo generati dal `DataSeeder`: tre utenti, uno store demo e una disponibilità iniziale per il sabato.
-- `DB_PASSWORD` e `JWT_SECRET` devono essere impostate come variabili d'ambiente prima di avviare il backend.
+- `DB_PASSWORD`, `FIREBASE_PROJECT_ID` e `FIREBASE_SERVICE_ACCOUNT_JSON` devono essere impostate prima di avviare il backend.
 - Non è presente un'app mobile nativa: l'interfaccia è una web app responsive.
 - La sospensione store è manuale e immediata: lo store resta non prenotabile finché l'admin non lo riattiva.
 - L'approvazione di una richiesta merchant cambia solo il ruolo utente; l'assegnazione di store non è automatica in questa demo.

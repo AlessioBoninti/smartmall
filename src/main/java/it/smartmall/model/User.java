@@ -41,13 +41,13 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Diciamo a Spring Security qual è il ruolo dell'utente (es. "ROLE_CUSTOMER")
+        // Spring Security usa il prefisso ROLE_ per le autorizzazioni basate sui ruoli.
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override
     public String getUsername() {
-        return email; // Usiamo l'email come username per fare il login!
+        return email;
     }
 
     @Override
