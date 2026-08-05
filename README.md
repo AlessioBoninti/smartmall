@@ -128,6 +128,46 @@ npm install
 npm run build
 ```
 
+## CI/CD
+
+La pipeline GitHub Actions è definita in `.github/workflows/ci.yml`.
+
+Su pull request e push su `main` esegue:
+
+- test backend con Maven;
+- build del jar backend;
+- installazione e build del frontend.
+
+Su push su `main` e avvio manuale pubblica anche le immagini Docker su GitHub Container Registry.
+
+Il deploy Kubernetes è manuale tramite `workflow_dispatch`, impostando l'input `deploy` a `true`.
+
+Variabili GitHub Actions richieste per il frontend:
+
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_APP_ID`
+
+Variabili GitHub Actions per la configurazione runtime:
+
+- `DB_URL`
+- `DB_USERNAME`
+- `HIBERNATE_DDL_AUTO`
+- `SPRING_JPA_SHOW_SQL`
+- `SPRING_PROFILES_ACTIVE`
+- `FIREBASE_PROJECT_ID`
+- `GHCR_PULL_USERNAME` se le immagini GHCR sono private
+
+Secret GitHub Actions richiesti per il deploy:
+
+- `KUBE_CONFIG_DATA`: kubeconfig del cluster codificato in Base64;
+- `DB_PASSWORD`;
+- `FIREBASE_SERVICE_ACCOUNT_JSON`;
+- `GHCR_PULL_TOKEN` se le immagini GHCR sono private.
+
+Il deploy applica i manifest Kubernetes, sostituisce le immagini locali con quelle pubblicate su GHCR e aggiorna ConfigMap e Secret direttamente nel cluster.
+
 ## Info utili
 
 - Il progetto usa una configurazione locale, non una configurazione di produzione.

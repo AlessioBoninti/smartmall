@@ -1,0 +1,12 @@
+.git
+.github
+.idea
+.vscode
+target
+frontend
+k8s
+.env
+.env.*
+*.log
+*.tmp
+*.temp
