@@ -21,6 +21,7 @@ frontend/.env.*
 # Variabili d'ambiente
 .env
 .env.*
+!.env.example
 
 # File temporanei
 *.tmp

@@ -4,12 +4,13 @@ import {
   LoaderCircle,
   LogIn,
   Mail,
+  Chrome,
   UserPlus,
 } from "lucide-react";
 import { Message, SectionHeader } from "../components/Common.jsx";
 import { MarketplacePanel } from "./CustomerPage.jsx";
 
-export default function LoginPage({ onLogin, onRegister, authError, notice }) {
+export default function LoginPage({ onLogin, onGoogleLogin, onRegister, authError, notice }) {
   return (
     <div className="dashboard visitor-dashboard">
       <section className="panel auth-panel">
@@ -20,6 +21,7 @@ export default function LoginPage({ onLogin, onRegister, authError, notice }) {
         />
         <AuthPanel
           onLogin={onLogin}
+          onGoogleLogin={onGoogleLogin}
           onRegister={onRegister}
           error={authError}
           notice={notice}
@@ -31,11 +33,12 @@ export default function LoginPage({ onLogin, onRegister, authError, notice }) {
   );
 }
 
-function AuthPanel({ onLogin, onRegister, error, notice }) {
+function AuthPanel({ onLogin, onGoogleLogin, onRegister, error, notice }) {
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("customer@test.com");
   const [password, setPassword] = useState("password123");
   const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -50,6 +53,16 @@ function AuthPanel({ onLogin, onRegister, error, notice }) {
       }
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleGoogleSubmit() {
+    setGoogleSubmitting(true);
+
+    try {
+      await onGoogleLogin();
+    } finally {
+      setGoogleSubmitting(false);
     }
   }
 
@@ -109,6 +122,16 @@ function AuthPanel({ onLogin, onRegister, error, notice }) {
       <button className="button primary wide" type="submit" disabled={submitting}>
         {submitting ? <LoaderCircle className="spin" size={18} /> : mode === "login" ? <LogIn size={18} /> : <UserPlus size={18} />}
         {mode === "login" ? "Entra" : "Crea account"}
+      </button>
+
+      <button
+        className="button secondary wide"
+        type="button"
+        onClick={handleGoogleSubmit}
+        disabled={googleSubmitting || submitting}
+      >
+        {googleSubmitting ? <LoaderCircle className="spin" size={18} /> : <Chrome size={18} />}
+        Accedi con Google
       </button>
     </form>
   );

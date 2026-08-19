@@ -87,7 +87,7 @@ function resolveErrorMessage(status, data) {
   }
 
   if (status === 403) {
-    return "Operazione non autorizzata o token CSRF non valido.";
+    return "Operazione non autorizzata o token Firebase non valido.";
   }
 
   if (status >= 500) {

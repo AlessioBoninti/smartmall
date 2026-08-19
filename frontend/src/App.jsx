@@ -4,8 +4,14 @@ import {
   LockKeyhole,
   LogOut,
 } from "lucide-react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import {
+  GoogleAuthProvider,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+} from "firebase/auth";
 import { apiFetch, setAuthTokenProvider } from "./api.js";
 import { firebaseAuth } from "./firebase.js";
 import { RoleBadge, LoadingScreen } from "./components/Common.jsx";
@@ -70,6 +76,18 @@ function App() {
     }
   }
 
+  async function handleGoogleLogin() {
+    setAuthError("");
+    setNotice("");
+
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(firebaseAuth, provider);
+    } catch (error) {
+      setAuthError(error.message);
+    }
+  }
+
   async function handleRegister(credentials) {
     setAuthError("");
     setNotice("");
@@ -106,6 +124,7 @@ function App() {
         ) : (
           <LoginPage
             onLogin={handleLogin}
+            onGoogleLogin={handleGoogleLogin}
             onRegister={handleRegister}
             authError={authError}
             notice={notice}

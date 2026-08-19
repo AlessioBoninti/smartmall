@@ -35,9 +35,12 @@ Il progetto viene eseguito con configurazione locale/dev. Il profilo attivo è `
 Per il backend servono queste variabili d'ambiente:
 
 ```powershell
+$env:DB_USERNAME="root"
 $env:DB_PASSWORD="root"
 $env:FIREBASE_PROJECT_ID="your-project-id"
 $env:FIREBASE_SERVICE_ACCOUNT_JSON="..."
+$env:CORS_ALLOWED_ORIGINS="http://localhost:5173,http://localhost:4173"
+$env:ENABLE_DEMO_DATA="true"
 ```
 
 Per il frontend, opzionale:
@@ -49,6 +52,28 @@ $env:VITE_FIREBASE_AUTH_DOMAIN="your-project.firebaseapp.com"
 $env:VITE_FIREBASE_PROJECT_ID="your-project-id"
 $env:VITE_FIREBASE_APP_ID="your-app-id"
 ```
+
+Il file `.env.example` contiene un modello con placeholder sicuri. Non committare file `.env` reali: sono giÃ  esclusi da `.gitignore`.
+
+`CORS_ALLOWED_ORIGINS` accetta piÃ¹ origin separati da virgola. In locale il default resta:
+
+```text
+http://localhost:5173,http://localhost:4173
+```
+
+`ENABLE_DEMO_DATA` controlla il caricamento dei dati demo:
+
+```text
+ENABLE_DEMO_DATA=true
+```
+
+mantiene customer, merchant, admin e store demo. In cloud si puÃ² impostare:
+
+```text
+ENABLE_DEMO_DATA=false
+```
+
+per evitare la creazione automatica dei dati demo.
 
 ## Avvio con Docker Compose
 
@@ -68,6 +93,8 @@ user: root
 password: root
 ```
 
+`root` Ã¨ solo un default locale per semplificare la demo. Per un deploy online impostare `DB_USERNAME` e `DB_PASSWORD` con valori dedicati tramite variabili d'ambiente o secret del provider.
+
 ## Avvio backend Spring Boot
 
 Dalla cartella principale del progetto:
@@ -76,6 +103,8 @@ Dalla cartella principale del progetto:
 $env:DB_PASSWORD="root"
 $env:FIREBASE_PROJECT_ID="your-project-id"
 $env:FIREBASE_SERVICE_ACCOUNT_JSON="..."
+$env:CORS_ALLOWED_ORIGINS="http://localhost:5173,http://localhost:4173"
+$env:ENABLE_DEMO_DATA="true"
 .\mvnw.cmd spring-boot:run
 ```
 
@@ -157,6 +186,8 @@ Variabili GitHub Actions per la configurazione runtime:
 - `SPRING_JPA_SHOW_SQL`
 - `SPRING_PROFILES_ACTIVE`
 - `FIREBASE_PROJECT_ID`
+- `CORS_ALLOWED_ORIGINS`
+- `ENABLE_DEMO_DATA`
 - `GHCR_PULL_USERNAME` se le immagini GHCR sono private
 
 Secret GitHub Actions richiesti per il deploy:
@@ -174,6 +205,9 @@ Il deploy applica i manifest Kubernetes, sostituisce le immagini locali con quel
 - Il database viene aggiornato automaticamente in sviluppo con `spring.jpa.hibernate.ddl-auto=update`.
 - Il progetto usa dati demo generati dal `DataSeeder`: tre utenti, uno store demo e una disponibilità iniziale per il sabato.
 - `DB_PASSWORD`, `FIREBASE_PROJECT_ID` e `FIREBASE_SERVICE_ACCOUNT_JSON` devono essere impostate prima di avviare il backend.
+- `CORS_ALLOWED_ORIGINS` permette di aggiungere l'URL pubblico del frontend senza modificare il codice.
+- `ENABLE_DEMO_DATA=false` evita la creazione automatica dei dati demo in cloud.
+- `/actuator/health` espone un health check semplice del backend.
 - Non è presente un'app mobile nativa: l'interfaccia è una web app responsive.
 - La sospensione store è manuale e immediata: lo store resta non prenotabile finché l'admin non lo riattiva.
 - L'approvazione di una richiesta merchant cambia solo il ruolo utente; l'assegnazione di store non è automatica in questa demo.

@@ -187,6 +187,8 @@ jobs:
           SPRING_JPA_SHOW_SQL="${SPRING_JPA_SHOW_SQL:-false}"
           SPRING_PROFILES_ACTIVE="${SPRING_PROFILES_ACTIVE:-dev}"
           FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID:-your-project-id}"
+          CORS_ALLOWED_ORIGINS="${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:4173}"
+          ENABLE_DEMO_DATA="${ENABLE_DEMO_DATA:-true}"
 
           kubectl -n smartmall create configmap smartmall-config \
             --from-literal=DB_URL="$DB_URL" \
@@ -195,6 +197,8 @@ jobs:
             --from-literal=SPRING_JPA_SHOW_SQL="$SPRING_JPA_SHOW_SQL" \
             --from-literal=SPRING_PROFILES_ACTIVE="$SPRING_PROFILES_ACTIVE" \
             --from-literal=FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
+            --from-literal=CORS_ALLOWED_ORIGINS="$CORS_ALLOWED_ORIGINS" \
+            --from-literal=ENABLE_DEMO_DATA="$ENABLE_DEMO_DATA" \
             --dry-run=client -o yaml | kubectl apply -f -
 
           kubectl -n smartmall create secret generic smartmall-secret \
@@ -208,6 +212,8 @@ jobs:
           SPRING_JPA_SHOW_SQL: ${{ vars.SPRING_JPA_SHOW_SQL }}
           SPRING_PROFILES_ACTIVE: ${{ vars.SPRING_PROFILES_ACTIVE }}
           FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          CORS_ALLOWED_ORIGINS: ${{ vars.CORS_ALLOWED_ORIGINS }}
+          ENABLE_DEMO_DATA: ${{ vars.ENABLE_DEMO_DATA }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
 
