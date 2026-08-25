@@ -270,7 +270,23 @@ jobs:
 
       - name: Restart workloads with latest config
         run: |
-          kubectl -n smartmall rollout restart deployment/mysql deployment/backend deployment/frontend
+          kubectl -n smartmall rollout restart deployment/mysql
           kubectl -n smartmall rollout status deployment/mysql --timeout=180s
+
+          kubectl -n smartmall scale deployment/backend --replicas=0
           kubectl -n smartmall rollout status deployment/backend --timeout=180s
+          kubectl -n smartmall wait --for=delete pod -l app=backend --timeout=180s
+          kubectl -n smartmall scale deployment/backend --replicas=1
+          kubectl -n smartmall rollout status deployment/backend --timeout=180s
+
+          kubectl -n smartmall rollout restart deployment/frontend
           kubectl -n smartmall rollout status deployment/frontend --timeout=180s
+
+      - name: Print Kubernetes debug info on failure
+        if: failure()
+        run: |
+          kubectl -n smartmall get pods -o wide || true
+          kubectl -n smartmall describe pods || true
+          kubectl -n smartmall logs deployment/mysql --tail=120 || true
+          kubectl -n smartmall logs deployment/backend --tail=120 || true
+          kubectl -n smartmall logs deployment/frontend --tail=120 || true

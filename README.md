@@ -35,7 +35,7 @@ SmartMall è una web app responsive per gestire prenotazioni negli store di un c
 
 ## Configurazione locale
 
-Il progetto usa il profilo `dev` di Spring Boot. In locale abilita i dati demo e usa MySQL locale o Docker Compose.
+Il progetto usa il profilo `dev` di Spring Boot. In locale abilita i dati dimostrativi e usa MySQL locale o Docker Compose.
 
 Variabili backend:
 
@@ -109,7 +109,7 @@ Frontend:
 http://localhost:5173
 ```
 
-## Credenziali demo
+## Credenziali dimostrative
 
 | Ruolo | Email | Password |
 | --- | --- | --- |
@@ -155,11 +155,11 @@ Il deploy Kubernetes è manuale:
 GitHub -> Actions -> CI/CD -> Run workflow -> deploy=true
 ```
 
-Non parte automaticamente su ogni push. Questo è utile per una demo perché evita deploy involontari.
+Non parte automaticamente su ogni push. Questa scelta riduce il rischio di deploy involontari.
 
 ## Deploy su DigitalOcean Kubernetes
 
-Questa procedura è pensata per 3 studenti e per una demo semplice. Non usa Helm, Terraform, Ingress, LoadBalancer, autoscaling o high availability.
+Questa procedura descrive un deploy essenziale su DigitalOcean Kubernetes. Non usa Helm, Terraform, Ingress, LoadBalancer, autoscaling o high availability.
 
 Configurazione cluster:
 
@@ -175,7 +175,7 @@ Database: MySQL dentro Kubernetes
 Accesso iniziale: kubectl port-forward
 ```
 
-Il repository non crea risorse cloud. Il cluster deve essere creato manualmente dal pannello DigitalOcean.
+Il repository non crea risorse cloud. Il cluster deve essere creato manualmente dalla console DigitalOcean.
 
 ### GitHub Secrets
 
@@ -229,7 +229,7 @@ VITE_FIREBASE_APP_ID
 GHCR_PULL_USERNAME
 ```
 
-Valori consigliati per la prima demo con port-forward:
+Valori consigliati per la prima verifica con port-forward:
 
 ```text
 DB_URL=jdbc:mysql://mysql:3306/smartmall?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true
@@ -260,7 +260,7 @@ FIREBASE_PROJECT_ID=<project-id>
 
 ### Come ottenere KUBE_CONFIG_DATA
 
-Dopo aver creato il cluster DOKS, scaricare il kubeconfig dal pannello DigitalOcean.
+Dopo aver creato il cluster DOKS, scaricare il kubeconfig dalla console DigitalOcean.
 
 Se si usa `doctl`:
 
@@ -302,6 +302,34 @@ La pipeline:
 - sostituisce nel manifest le immagini locali con quelle GHCR;
 - applica i workload Kubernetes;
 - controlla il rollout di MySQL, backend e frontend.
+
+### Prima inizializzazione dopo modifiche MySQL
+
+Il container MySQL ora usa:
+
+```text
+MYSQL_ROOT_HOST=%
+```
+
+Questo permette al backend di collegarsi a MySQL da un pod Kubernetes diverso. Questa impostazione viene applicata da MySQL quando il database viene inizializzato per la prima volta.
+
+Se il PVC `mysql-data` esisteva già prima di questa modifica, MySQL potrebbe continuare a usare i vecchi permessi e il backend potrebbe mostrare ancora:
+
+```text
+Host '<IP-pod-backend>' is not allowed to connect to this MySQL server
+```
+
+Per una prima verifica su un cluster già usato, eliminare il namespace `smartmall`, controllare che il PVC e il volume siano stati rimossi, poi rifare il deploy manuale da GitHub Actions.
+
+Comandi:
+
+```bash
+kubectl delete namespace smartmall
+kubectl get namespace smartmall
+kubectl get pvc -A
+```
+
+Se `kubectl get namespace smartmall` mostra ancora il namespace, aspettare qualche minuto e riprovare. Dopo la rimozione, controllare anche dalla console DigitalOcean che non siano rimasti volumi inutilizzati.
 
 ### Verifica dopo il deploy
 
@@ -350,22 +378,22 @@ I costi possibili sono:
 
 Eliminare solo i pod non ferma i costi. I pod possono essere ricreati automaticamente da Kubernetes.
 
-Per fermare i costi dopo la demo:
+Per fermare i costi dopo la verifica:
 
-1. Eliminare il cluster Kubernetes dal pannello DigitalOcean.
+1. Eliminare il cluster Kubernetes dalla console DigitalOcean.
 2. Controllare nella sezione Volumes se sono rimasti volumi collegati al PVC MySQL.
 3. Eliminare eventuali volumi non più necessari.
 4. Controllare che non esistano Load Balancer creati per errore.
 
-Comando utile per pulire le risorse applicative dentro il cluster:
+Comando per rimuovere le risorse applicative dentro il cluster:
 
 ```bash
 kubectl delete namespace smartmall
 ```
 
-Questo comando non elimina necessariamente il cluster DigitalOcean o tutti i costi collegati. Per fermare davvero i costi, usare il pannello DigitalOcean ed eliminare cluster e volumi.
+Questo comando non elimina necessariamente il cluster DigitalOcean o tutti i costi collegati. Per interrompere i costi, usare la console DigitalOcean ed eliminare cluster e volumi.
 
-## Piano B locale con Kubernetes
+## Esecuzione locale con Kubernetes
 
 Con Docker Desktop Kubernetes:
 

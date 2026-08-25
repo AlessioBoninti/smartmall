@@ -3,9 +3,9 @@ kind: Namespace
 metadata:
   name: smartmall
 ---
-# Placeholder for local/manual tests only.
-# During the real deploy, GitHub Actions recreates this ConfigMap from GitHub Variables.
-# Do not put production values directly in this file.
+# Valori di esempio per esecuzioni locali o verifiche manuali.
+# Nel deploy reale GitHub Actions ricrea questa ConfigMap usando le GitHub Variables.
+# Non inserire valori di produzione direttamente in questo file.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -21,9 +21,9 @@ data:
   CORS_ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:4173"
   ENABLE_DEMO_DATA: "true"
 ---
-# Placeholder for local/manual tests only.
-# During the real deploy, GitHub Actions recreates this Secret from GitHub Secrets.
-# Do not put real passwords or Firebase service accounts in this file.
+# Valori di esempio per esecuzioni locali o verifiche manuali.
+# Nel deploy reale GitHub Actions ricrea questo Secret usando i GitHub Secrets.
+# Non inserire password reali o service account Firebase in questo file.
 apiVersion: v1
 kind: Secret
 metadata:
@@ -53,6 +53,8 @@ metadata:
   namespace: smartmall
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: mysql
@@ -75,6 +77,8 @@ spec:
                   key: DB_PASSWORD
             - name: MYSQL_DATABASE
               value: smartmall
+            - name: MYSQL_ROOT_HOST
+              value: "%"
           resources:
             requests:
               cpu: 250m
