@@ -20,30 +20,35 @@ SmartMall è una web app responsive per gestire prenotazioni negli store di un c
 - Database: MySQL 8.
 - Persistenza: Spring Data JPA, Hibernate.
 - Build: Maven per backend, npm/Vite per frontend.
-- Docker: Docker Compose per avviare MySQL, backend e frontend.
+- Container: Docker, Docker Compose, GHCR.
+- Deploy: Kubernetes su DigitalOcean Kubernetes.
 
 ## Prerequisiti
 
 - Java 17.
-- Node.js e npm.
+- Node.js 20 e npm.
 - Docker Desktop o Docker Engine.
+- kubectl.
+- Account GitHub con Actions abilitate.
+- Account DigitalOcean, solo per creare manualmente il cluster.
+- Progetto Firebase già configurato.
 
 ## Configurazione locale
 
-Il progetto viene eseguito con configurazione locale/dev. Il profilo attivo è `dev`, definito in `src/main/resources/application.properties`, e abilita il `DataSeeder` per creare i dati demo se mancanti.
+Il progetto usa il profilo `dev` di Spring Boot. In locale abilita i dati demo e usa MySQL locale o Docker Compose.
 
-Per il backend servono queste variabili d'ambiente:
+Variabili backend:
 
 ```powershell
 $env:DB_USERNAME="root"
 $env:DB_PASSWORD="root"
 $env:FIREBASE_PROJECT_ID="your-project-id"
-$env:FIREBASE_SERVICE_ACCOUNT_JSON="..."
+$env:FIREBASE_SERVICE_ACCOUNT_JSON="{...}"
 $env:CORS_ALLOWED_ORIGINS="http://localhost:5173,http://localhost:4173"
 $env:ENABLE_DEMO_DATA="true"
 ```
 
-Per il frontend, opzionale:
+Variabili frontend:
 
 ```powershell
 $env:VITE_API_URL="http://localhost:8080"
@@ -53,68 +58,42 @@ $env:VITE_FIREBASE_PROJECT_ID="your-project-id"
 $env:VITE_FIREBASE_APP_ID="your-app-id"
 ```
 
-Il file `.env.example` contiene un modello con placeholder sicuri. Non committare file `.env` reali: sono giÃ  esclusi da `.gitignore`.
-
-`CORS_ALLOWED_ORIGINS` accetta piÃ¹ origin separati da virgola. In locale il default resta:
-
-```text
-http://localhost:5173,http://localhost:4173
-```
-
-`ENABLE_DEMO_DATA` controlla il caricamento dei dati demo:
-
-```text
-ENABLE_DEMO_DATA=true
-```
-
-mantiene customer, merchant, admin e store demo. In cloud si puÃ² impostare:
-
-```text
-ENABLE_DEMO_DATA=false
-```
-
-per evitare la creazione automatica dei dati demo.
+Il file `.env.example` contiene placeholder sicuri. Non committare file `.env` reali: sono esclusi da `.gitignore`.
 
 ## Avvio con Docker Compose
-
-Docker Compose avvia MySQL, backend e frontend.
 
 ```powershell
 docker compose up --build
 ```
 
-Il database locale sarà disponibile su:
+Servizi locali:
 
 ```text
-host: localhost
-porta: 3306
-database: smartmall
-user: root
-password: root
+Frontend: http://localhost:5173
+Backend:  http://localhost:8080
+MySQL:    localhost:3306
 ```
 
-`root` Ã¨ solo un default locale per semplificare la demo. Per un deploy online impostare `DB_USERNAME` e `DB_PASSWORD` con valori dedicati tramite variabili d'ambiente o secret del provider.
+## Avvio backend
 
-## Avvio backend Spring Boot
-
-Dalla cartella principale del progetto:
+Dalla cartella principale:
 
 ```powershell
 $env:DB_PASSWORD="root"
 $env:FIREBASE_PROJECT_ID="your-project-id"
-$env:FIREBASE_SERVICE_ACCOUNT_JSON="..."
+$env:FIREBASE_SERVICE_ACCOUNT_JSON="{...}"
 $env:CORS_ALLOWED_ORIGINS="http://localhost:5173,http://localhost:4173"
 $env:ENABLE_DEMO_DATA="true"
 .\mvnw.cmd spring-boot:run
 ```
 
-Il backend parte su:
+Backend:
 
 ```text
 http://localhost:8080
 ```
 
-## Avvio frontend React/Vite
+## Avvio frontend
 
 Da una seconda shell:
 
@@ -124,13 +103,11 @@ npm install
 npm run dev
 ```
 
-Aprire l'applicazione da:
+Frontend:
 
 ```text
 http://localhost:5173
 ```
-
-Nota CORS: usare `http://localhost:5173`, non `http://127.0.0.1:5173`. Il backend autorizza esplicitamente `localhost:5173` e `localhost:4173`.
 
 ## Credenziali demo
 
@@ -145,15 +122,15 @@ Nota CORS: usare `http://localhost:5173`, non `http://127.0.0.1:5173`. Il backen
 Backend:
 
 ```powershell
-.\mvnw.cmd -DskipTests package
 .\mvnw.cmd test
+.\mvnw.cmd package -DskipTests
 ```
 
 Frontend:
 
 ```powershell
 cd frontend
-npm install
+npm ci
 npm run build
 ```
 
@@ -161,53 +138,274 @@ npm run build
 
 La pipeline GitHub Actions è definita in `.github/workflows/ci.yml`.
 
-Su pull request e push su `main` esegue:
+Su pull request:
 
-- test backend con Maven;
-- build del jar backend;
-- installazione e build del frontend.
+- esegue i test backend;
+- compila il backend;
+- compila il frontend.
 
-Su push su `main` e avvio manuale pubblica anche le immagini Docker su GitHub Container Registry.
+Su push su `main` o avvio manuale:
 
-Il deploy Kubernetes è manuale tramite `workflow_dispatch`, impostando l'input `deploy` a `true`.
+- esegue test e build;
+- pubblica le immagini Docker su GitHub Container Registry, cioè GHCR.
 
-Variabili GitHub Actions richieste per il frontend:
+Il deploy Kubernetes è manuale:
 
-- `VITE_FIREBASE_API_KEY`
-- `VITE_FIREBASE_AUTH_DOMAIN`
-- `VITE_FIREBASE_PROJECT_ID`
-- `VITE_FIREBASE_APP_ID`
+```text
+GitHub -> Actions -> CI/CD -> Run workflow -> deploy=true
+```
 
-Variabili GitHub Actions per la configurazione runtime:
+Non parte automaticamente su ogni push. Questo è utile per una demo perché evita deploy involontari.
 
-- `DB_URL`
-- `DB_USERNAME`
-- `HIBERNATE_DDL_AUTO`
-- `SPRING_JPA_SHOW_SQL`
-- `SPRING_PROFILES_ACTIVE`
-- `FIREBASE_PROJECT_ID`
-- `CORS_ALLOWED_ORIGINS`
-- `ENABLE_DEMO_DATA`
-- `GHCR_PULL_USERNAME` se le immagini GHCR sono private
+## Deploy su DigitalOcean Kubernetes
 
-Secret GitHub Actions richiesti per il deploy:
+Questa procedura è pensata per 3 studenti e per una demo semplice. Non usa Helm, Terraform, Ingress, LoadBalancer, autoscaling o high availability.
 
-- `KUBE_CONFIG_DATA`: kubeconfig del cluster codificato in Base64;
-- `DB_PASSWORD`;
-- `FIREBASE_SERVICE_ACCOUNT_JSON`;
-- `GHCR_PULL_TOKEN` se le immagini GHCR sono private.
+Configurazione cluster:
 
-Il deploy applica i manifest Kubernetes, sostituisce le immagini locali con quelle pubblicate su GHCR e aggiorna ConfigMap e Secret direttamente nel cluster.
+```text
+Provider: DigitalOcean Kubernetes
+Regione: FRA1
+Node pool: 1 nodo
+Tipo nodo: Basic
+Dimensione: 4 GB RAM
+Autoscaling: disattivato
+High availability: disattivata
+Database: MySQL dentro Kubernetes
+Accesso iniziale: kubectl port-forward
+```
 
-## Info utili
+Il repository non crea risorse cloud. Il cluster deve essere creato manualmente dal pannello DigitalOcean.
 
-- Il progetto usa una configurazione locale, non una configurazione di produzione.
-- Il database viene aggiornato automaticamente in sviluppo con `spring.jpa.hibernate.ddl-auto=update`.
-- Il progetto usa dati demo generati dal `DataSeeder`: tre utenti, uno store demo e una disponibilità iniziale per il sabato.
-- `DB_PASSWORD`, `FIREBASE_PROJECT_ID` e `FIREBASE_SERVICE_ACCOUNT_JSON` devono essere impostate prima di avviare il backend.
-- `CORS_ALLOWED_ORIGINS` permette di aggiungere l'URL pubblico del frontend senza modificare il codice.
-- `ENABLE_DEMO_DATA=false` evita la creazione automatica dei dati demo in cloud.
-- `/actuator/health` espone un health check semplice del backend.
-- Non è presente un'app mobile nativa: l'interfaccia è una web app responsive.
-- La sospensione store è manuale e immediata: lo store resta non prenotabile finché l'admin non lo riattiva.
-- L'approvazione di una richiesta merchant cambia solo il ruolo utente; l'assegnazione di store non è automatica in questa demo.
+### GitHub Secrets
+
+Configurarli in:
+
+```text
+GitHub -> Settings -> Secrets and variables -> Actions -> Secrets
+```
+
+Elenco esatto:
+
+```text
+KUBE_CONFIG_DATA
+DB_PASSWORD
+FIREBASE_SERVICE_ACCOUNT_JSON
+GHCR_PULL_TOKEN
+```
+
+Significato:
+
+- `KUBE_CONFIG_DATA`: kubeconfig del cluster DOKS codificato in Base64.
+- `DB_PASSWORD`: password del MySQL dentro Kubernetes.
+- `FIREBASE_SERVICE_ACCOUNT_JSON`: JSON del service account Firebase Admin SDK.
+- `GHCR_PULL_TOKEN`: serve solo se le immagini GHCR sono private. Se le immagini sono pubbliche, può non essere impostato.
+
+Non inserire questi valori nel repository.
+
+### GitHub Variables
+
+Configurarle in:
+
+```text
+GitHub -> Settings -> Secrets and variables -> Actions -> Variables
+```
+
+Elenco esatto:
+
+```text
+DB_URL
+DB_USERNAME
+HIBERNATE_DDL_AUTO
+SPRING_JPA_SHOW_SQL
+SPRING_PROFILES_ACTIVE
+FIREBASE_PROJECT_ID
+CORS_ALLOWED_ORIGINS
+ENABLE_DEMO_DATA
+VITE_FIREBASE_API_KEY
+VITE_FIREBASE_AUTH_DOMAIN
+VITE_FIREBASE_PROJECT_ID
+VITE_FIREBASE_APP_ID
+GHCR_PULL_USERNAME
+```
+
+Valori consigliati per la prima demo con port-forward:
+
+```text
+DB_URL=jdbc:mysql://mysql:3306/smartmall?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true
+DB_USERNAME=root
+HIBERNATE_DDL_AUTO=update
+SPRING_JPA_SHOW_SQL=false
+SPRING_PROFILES_ACTIVE=dev
+ENABLE_DEMO_DATA=true
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:4173
+```
+
+Variabili Firebase frontend:
+
+```text
+VITE_FIREBASE_API_KEY=<valore Firebase web app>
+VITE_FIREBASE_AUTH_DOMAIN=<project-id>.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=<project-id>
+VITE_FIREBASE_APP_ID=<valore Firebase web app>
+```
+
+Variabili Firebase backend:
+
+```text
+FIREBASE_PROJECT_ID=<project-id>
+```
+
+`GHCR_PULL_USERNAME` serve solo se GHCR è privato. Di solito coincide con l'utente GitHub o con l'owner che ha creato il token.
+
+### Come ottenere KUBE_CONFIG_DATA
+
+Dopo aver creato il cluster DOKS, scaricare il kubeconfig dal pannello DigitalOcean.
+
+Se si usa `doctl`:
+
+```bash
+doctl kubernetes cluster kubeconfig save <cluster-name-or-id>
+```
+
+Poi codificare il kubeconfig in Base64.
+
+PowerShell:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("$env:USERPROFILE\.kube\config"))
+```
+
+Bash:
+
+```bash
+base64 -w 0 ~/.kube/config
+```
+
+Copiare il risultato nel GitHub Secret `KUBE_CONFIG_DATA`.
+
+### Deploy manuale
+
+Da GitHub:
+
+```text
+Actions -> CI/CD -> Run workflow
+deploy = true
+Run workflow
+```
+
+La pipeline:
+
+- esegue test e build;
+- pubblica le immagini backend e frontend su GHCR;
+- crea o aggiorna ConfigMap e Secret nel namespace `smartmall`;
+- sostituisce nel manifest le immagini locali con quelle GHCR;
+- applica i workload Kubernetes;
+- controlla il rollout di MySQL, backend e frontend.
+
+### Verifica dopo il deploy
+
+Controllare pod, service e volume:
+
+```bash
+kubectl -n smartmall get pods
+kubectl -n smartmall get svc
+kubectl -n smartmall get pvc
+```
+
+Aprire il frontend con port-forward:
+
+```bash
+kubectl -n smartmall port-forward service/frontend 5173:80
+```
+
+Poi aprire:
+
+```text
+http://localhost:5173
+```
+
+Non c'è un URL pubblico perché frontend e backend usano Service di tipo `ClusterIP`. Questo significa che sono raggiungibili dentro il cluster, oppure dal proprio computer tramite `kubectl port-forward`.
+
+Per controllare il backend:
+
+```bash
+kubectl -n smartmall port-forward service/backend 8080:8080
+```
+
+Poi aprire:
+
+```text
+http://localhost:8080/actuator/health
+```
+
+### Costi DigitalOcean
+
+I costi possibili sono:
+
+- Nodo Kubernetes Basic 4 GB: è il costo principale e continua finché il cluster esiste.
+- PVC MySQL: il manifest crea `mysql-data`, che su DigitalOcean può creare un volume a pagamento.
+- Snapshot o backup: costano se vengono attivati manualmente.
+- Load Balancer: non dovrebbe essere creato da questo progetto, perché i Service sono `ClusterIP`. Potrebbe comparire solo se qualcuno cambia un Service in `LoadBalancer`.
+
+Eliminare solo i pod non ferma i costi. I pod possono essere ricreati automaticamente da Kubernetes.
+
+Per fermare i costi dopo la demo:
+
+1. Eliminare il cluster Kubernetes dal pannello DigitalOcean.
+2. Controllare nella sezione Volumes se sono rimasti volumi collegati al PVC MySQL.
+3. Eliminare eventuali volumi non più necessari.
+4. Controllare che non esistano Load Balancer creati per errore.
+
+Comando utile per pulire le risorse applicative dentro il cluster:
+
+```bash
+kubectl delete namespace smartmall
+```
+
+Questo comando non elimina necessariamente il cluster DigitalOcean o tutti i costi collegati. Per fermare davvero i costi, usare il pannello DigitalOcean ed eliminare cluster e volumi.
+
+## Piano B locale con Kubernetes
+
+Con Docker Desktop Kubernetes:
+
+```bash
+docker build -t smartmall-backend:latest .
+docker build -t smartmall-frontend:latest ./frontend
+kubectl apply -f k8s/smartmall.yaml
+kubectl -n smartmall get pods
+kubectl -n smartmall port-forward service/frontend 5173:80
+```
+
+Aprire:
+
+```text
+http://localhost:5173
+```
+
+Se il cluster locale non vede le immagini Docker locali, usare le immagini GHCR o caricare le immagini nel cluster locale.
+
+## Diagramma applicativo
+
+```mermaid
+flowchart LR
+    browser[Browser] --> frontend[Frontend React + Nginx]
+    frontend --> backend[Backend Spring Boot]
+    backend --> mysql[(MySQL)]
+    frontend --> firebase[Firebase Authentication]
+    backend --> firebase
+```
+
+## Diagramma CI/CD
+
+```mermaid
+flowchart LR
+    push[Push GitHub] --> actions[GitHub Actions]
+    actions --> tests[Test backend e build frontend]
+    tests --> ghcr[GHCR Docker images]
+    ghcr --> manual[workflow_dispatch deploy=true]
+    manual --> doks[DigitalOcean Kubernetes]
+    doks --> fepod[Pod frontend]
+    doks --> bepod[Pod backend]
+    doks --> mysqlpod[Pod MySQL + PVC]
+```

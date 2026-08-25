@@ -156,6 +156,31 @@ jobs:
       - name: Set up kubectl
         uses: azure/setup-kubectl@v4
 
+      - name: Validate deploy configuration
+        shell: bash
+        run: |
+          missing=0
+
+          for name in KUBE_CONFIG_DATA DB_PASSWORD FIREBASE_SERVICE_ACCOUNT_JSON FIREBASE_PROJECT_ID VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_APP_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing required deploy value: ${name}"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
+
       - name: Configure kubeconfig
         shell: bash
         run: |
@@ -171,12 +196,13 @@ jobs:
           cp k8s/smartmall.yaml /tmp/smartmall.yaml
           sed -i "s|image: smartmall-backend:latest|image: ${BACKEND_IMAGE}|g" /tmp/smartmall.yaml
           sed -i "s|image: smartmall-frontend:latest|image: ${FRONTEND_IMAGE}|g" /tmp/smartmall.yaml
+          awk 'BEGIN { RS="---"; ORS="---" } $0 !~ /kind:[[:space:]]*ConfigMap/ && $0 !~ /kind:[[:space:]]*Secret/ { print $0 }' /tmp/smartmall.yaml > /tmp/smartmall-workloads.yaml
         env:
           BACKEND_IMAGE: ${{ needs.docker.outputs.backend_image }}
           FRONTEND_IMAGE: ${{ needs.docker.outputs.frontend_image }}
 
-      - name: Apply Kubernetes manifest
-        run: kubectl apply -f /tmp/smartmall.yaml
+      - name: Ensure namespace
+        run: kubectl create namespace smartmall --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Apply runtime configuration
         shell: bash
@@ -222,6 +248,7 @@ jobs:
         run: |
           if [ -n "$GHCR_PULL_TOKEN" ]; then
             GHCR_PULL_USERNAME="${GHCR_PULL_USERNAME:-$GITHUB_ACTOR}"
+            echo "GHCR_PULL_TOKEN is configured: creating image pull secret for private GHCR images."
 
             kubectl -n smartmall create secret docker-registry ghcr-auth \
               --docker-server=ghcr.io \
@@ -231,12 +258,17 @@ jobs:
 
             kubectl -n smartmall patch serviceaccount default \
               -p '{"imagePullSecrets":[{"name":"ghcr-auth"}]}'
+          else
+            echo "GHCR_PULL_TOKEN is not configured. This is OK only if the GHCR images are public."
           fi
         env:
           GHCR_PULL_USERNAME: ${{ vars.GHCR_PULL_USERNAME }}
           GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
 
-      - name: Restart workloads
+      - name: Apply Kubernetes workloads
+        run: kubectl apply -f /tmp/smartmall-workloads.yaml
+
+      - name: Restart workloads with latest config
         run: |
           kubectl -n smartmall rollout restart deployment/mysql deployment/backend deployment/frontend
           kubectl -n smartmall rollout status deployment/mysql --timeout=180s

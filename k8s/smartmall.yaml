@@ -3,6 +3,9 @@ kind: Namespace
 metadata:
   name: smartmall
 ---
+# Placeholder for local/manual tests only.
+# During the real deploy, GitHub Actions recreates this ConfigMap from GitHub Variables.
+# Do not put production values directly in this file.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -10,14 +13,17 @@ metadata:
   namespace: smartmall
 data:
   DB_URL: "jdbc:mysql://mysql:3306/smartmall?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true"
-  DB_USERNAME: root
-  HIBERNATE_DDL_AUTO: update
+  DB_USERNAME: "root"
+  HIBERNATE_DDL_AUTO: "update"
   SPRING_JPA_SHOW_SQL: "false"
-  SPRING_PROFILES_ACTIVE: dev
-  FIREBASE_PROJECT_ID: your-project-id
+  SPRING_PROFILES_ACTIVE: "dev"
+  FIREBASE_PROJECT_ID: "REPLACE_WITH_FIREBASE_PROJECT_ID"
   CORS_ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:4173"
   ENABLE_DEMO_DATA: "true"
 ---
+# Placeholder for local/manual tests only.
+# During the real deploy, GitHub Actions recreates this Secret from GitHub Secrets.
+# Do not put real passwords or Firebase service accounts in this file.
 apiVersion: v1
 kind: Secret
 metadata:
@@ -25,20 +31,8 @@ metadata:
   namespace: smartmall
 type: Opaque
 stringData:
-  DB_PASSWORD: root
-  FIREBASE_SERVICE_ACCOUNT_JSON: |
-    {
-      "type": "service_account",
-      "project_id": "your-project-id",
-      "private_key_id": "replace-me",
-      "private_key": "-----BEGIN PRIVATE KEY-----\nREPLACE_ME\n-----END PRIVATE KEY-----\n",
-      "client_email": "firebase-adminsdk@your-project-id.iam.gserviceaccount.com",
-      "client_id": "replace-me",
-      "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-      "token_uri": "https://oauth2.googleapis.com/token",
-      "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-      "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk%40your-project-id.iam.gserviceaccount.com"
-    }
+  DB_PASSWORD: "REPLACE_WITH_STRONG_DB_PASSWORD"
+  FIREBASE_SERVICE_ACCOUNT_JSON: "REPLACE_WITH_FIREBASE_SERVICE_ACCOUNT_JSON"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -58,6 +52,7 @@ metadata:
   name: mysql
   namespace: smartmall
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: mysql
@@ -80,6 +75,33 @@ spec:
                   key: DB_PASSWORD
             - name: MYSQL_DATABASE
               value: smartmall
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 750m
+              memory: 1Gi
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - mysqladmin ping -h 127.0.0.1 -u root -p"$MYSQL_ROOT_PASSWORD"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - mysqladmin ping -h 127.0.0.1 -u root -p"$MYSQL_ROOT_PASSWORD"
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
           volumeMounts:
             - name: mysql-data
               mountPath: /var/lib/mysql
@@ -94,10 +116,12 @@ metadata:
   name: mysql
   namespace: smartmall
 spec:
+  type: ClusterIP
   selector:
     app: mysql
   ports:
     - port: 3306
+      targetPort: 3306
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -105,6 +129,7 @@ metadata:
   name: backend
   namespace: smartmall
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: backend
@@ -124,18 +149,29 @@ spec:
                 name: smartmall-config
             - secretRef:
                 name: smartmall-secret
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 750m
+              memory: 1Gi
           readinessProbe:
             httpGet:
               path: /actuator/health
               port: 8080
             initialDelaySeconds: 30
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
           livenessProbe:
             httpGet:
               path: /actuator/health
               port: 8080
             initialDelaySeconds: 60
             periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
 ---
 apiVersion: v1
 kind: Service
@@ -143,10 +179,12 @@ metadata:
   name: backend
   namespace: smartmall
 spec:
+  type: ClusterIP
   selector:
     app: backend
   ports:
     - port: 8080
+      targetPort: 8080
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -154,6 +192,7 @@ metadata:
   name: frontend
   namespace: smartmall
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: frontend
@@ -168,6 +207,29 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
 ---
 apiVersion: v1
 kind: Service
@@ -175,8 +237,9 @@ metadata:
   name: frontend
   namespace: smartmall
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: frontend
   ports:
     - port: 80
+      targetPort: 80
