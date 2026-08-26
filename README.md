@@ -23,6 +23,13 @@ SmartMall è una web app responsive per gestire prenotazioni negli store di un c
 - Container: Docker, Docker Compose, GHCR.
 - Deploy: Kubernetes su DigitalOcean Kubernetes.
 
+## Scelte progettuali
+- Autenticazione Stateless (Firebase + Spring Security): Scelta un'architettura token-based senza sessioni lato server (`SessionCreationPolicy.STATELESS`) per garantire la scalabilità e disaccoppiare la gestione degli utenti dal database relazionale.
+- Disaccoppiamento Ruolo/Store (Merchant): L'approvazione del ruolo `MERCHANT` da parte di un admin non genera automaticamente uno store. L'esercente deve configurare il proprio negozio in un secondo momento, garantendo flessibilità gestionale.
+- Sicurezza delle credenziali su DB: Le password degli utenti sono cifrate tramite l'algoritmo **BCrypt** (`BCryptPasswordEncoder`).
+- ClusterIP e Port-Forwarding (Kubernetes): I servizi in Kubernetes sono esposti come `ClusterIP` anziché `LoadBalancer`. Questa scelta evita l'allocazione di un IP pubblico a pagamento su DigitalOcean, riducendo a zero i costi inutili d'esame e consentendo l'accesso sicuro tramite `kubectl port-forward`.
+- Deploy Manuale via Workflow Dispatch: La pipeline di deploy su Kubernetes non scatta in automatico ad ogni commit su `main`, ma richiede l'avvio manuale (`deploy = true`). Questo previene modifiche o sovrascritture accidentali del cluster durante il lavoro di sviluppo.
+
 ## Prerequisiti
 
 - Java 17.
@@ -58,7 +65,7 @@ $env:VITE_FIREBASE_PROJECT_ID="your-project-id"
 $env:VITE_FIREBASE_APP_ID="your-app-id"
 ```
 
-Il file `.env.example` contiene placeholder sicuri. Non committare file `.env` reali: sono esclusi da `.gitignore`.
+Il file `.env.example` contiene placeholder sicuri. Non committare file `.env` reali: assicurarsi che siano inseriti nel file `.gitignore` per evitare la fuga di credenziali.
 
 ## Avvio con Docker Compose
 
